@@ -1,0 +1,3 @@
+build*
+# keeping .vscode for intellisense
+# .vscode/
