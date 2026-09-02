@@ -1,10 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <array>
 
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -20,6 +23,8 @@
 #include "Graphics/Shader.hpp"
 #include "Graphics/Texture.hpp"
 
+glm::mat4 rotationMatrix = glm::mat4{1.0f};
+
 // TODO: abstract
 // TODO: render over imgui dock
 void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message, const void *userParam)
@@ -27,8 +32,17 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
     std::cout << message << '\n';
 }
 
+void ProcessInput(GLFWwindow* window) {
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    //     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+    
+    // if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    //     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+}
+
 Game::Game()
-    : m_Window(1280, 720, "Minecraft++")
+    : m_Window(1024, 1024, "Minecraft++")
 {
     ASSERT_INIT(m_Window.Init());
     
@@ -41,7 +55,12 @@ Game::Game()
     glDebugMessageCallback(GLDebugMessageCallback, this);
     glfwSetFramebufferSizeCallback(m_Window.GetWindow(), [](GLFWwindow* window, int width, int height) {
         glViewport(0, 0, width, height);
+        // Render_();
     });
+
+    glfwSwapInterval(1);
+
+    // glfwSetKeyCallback
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -65,34 +84,29 @@ Game::~Game()
 
 void Game::Run()
 {
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,    0.0f, 0.0f,  // Bottom Left
-        0.5f, -0.5f, 0.0f,     1.0f, 0.0f,  // Bottom Right
-        0.5f, 0.5f, 0.0f,      1.0f, 1.0f,   // Top Right
-        -0.5f, 0.5f, 0.0f,     0.0f, 1.0f  // Top Left
+    constexpr auto vertices = std::array{
+        // - positions -       - tex coords -
+        -0.5f, -0.5f, -0.5f,     0.0f, 0.0f,    // Bottom Left Back
+         0.5f, -0.5f, -0.5f,     1.0f, 0.0f,    // Bottom Right Back
+         0.5f, -0.5f,  0.5f,     1.0f, 1.0f,    // Bottom Right Front
+        -0.5f, -0.5f,  0.5f,     0.0f, 1.0f,    // Bottom Left Front
+
+
     };
 
-    // float positions[] = {
-    //     -0.5f, 0.5f, 0.0f,
-    //     -0.5f, -0.5f, 0.0f,
-    //     0.5f, -0.5f, 0.0f,
-    //     0.5f, 0.5f, 0.0f
-    // };
-
-    unsigned int indices[] = {
-        0, 1, 2,
-        0, 3, 2
+    constexpr auto indices = std::array{
+        0u, 1u, 2u,
+        0u, 3u, 2u,
     };
 
     VertexArray vao;
     vao.Bind();
     // vbo already binded at construction
-    VertexBuffer vbo(20 * sizeof(float), vertices);
+    VertexBuffer vbo(vertices.size() * sizeof(float), vertices.data());
     vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, false, 5 * sizeof(float), 0);
     vao.LinkAttrib(vbo, 1, 2, GL_FLOAT, false, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    // unbind vbo and vao
 
-    IndexBuffer ibo(6 * sizeof(unsigned int), indices);
+    IndexBuffer ibo(indices.size() * sizeof(unsigned int), indices.data());
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     ImVec4 triColor = ImVec4(0.8f, 0.3f, 0.5f, 1.0f);
 
@@ -102,27 +116,27 @@ void Game::Run()
     Texture texture("../assets/textures/dirt.png");
     texture.Bind();
 
-    // Rebind vao and ibo
-    vao.Bind();
-    ibo.Bind();
-
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    glEnable(GL_DEPTH_TEST);
 
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
         glfwPollEvents();
-
+        ProcessInput(m_Window.GetWindow());
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // shader.SetUniform("triColor", triColor.x, triColor.y, triColor.z, triColor.w);
         texture.Bind();
         shader.Bind();
         vao.Bind();
-        glDrawElements(GL_TRIANGLE_STRIP, 6, GL_UNSIGNED_INT, 0);
+        int location = shader.GetUniformLocation("rotationMatrix");
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // - GUI -
         ImGui::Begin("Configurer");

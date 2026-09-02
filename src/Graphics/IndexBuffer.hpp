@@ -3,7 +3,7 @@
 class IndexBuffer
 {
 public:
-    IndexBuffer(GLsizeiptr size, GLuint* indices);
+    IndexBuffer(GLsizeiptr size, const GLuint* indices);
     ~IndexBuffer();
 
     void Bind();

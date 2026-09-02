@@ -12,5 +12,7 @@ public:
 
     void Run();
 private:
+    void Render_();
+
     Window m_Window;
 };
