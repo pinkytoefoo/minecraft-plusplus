@@ -34,7 +34,14 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
 
 void ProcessInput(GLFWwindow* window) {
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
     //     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3{0.0f, 1.0f, 0.0f});
     
     // if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
@@ -85,19 +92,69 @@ Game::~Game()
 void Game::Run()
 {
     constexpr auto vertices = std::array{
-        // - positions -       - tex coords -
-        -0.5f, -0.5f, -0.5f,     0.0f, 0.0f,    // Bottom Left Back
-         0.5f, -0.5f, -0.5f,     1.0f, 0.0f,    // Bottom Right Back
-         0.5f, -0.5f,  0.5f,     1.0f, 1.0f,    // Bottom Right Front
-        -0.5f, -0.5f,  0.5f,     0.0f, 1.0f,    // Bottom Left Front
+        // front
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 
+        // back
+        0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
 
+        // left
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+
+        // right
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+
+        // top
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+
+        // bottom
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 1.0f,
     };
 
     constexpr auto indices = std::array{
-        0u, 1u, 2u,
-        0u, 3u, 2u,
+        // front
+        0u,  1u,  2u,
+        0u,  2u,  3u,
+
+        // back
+        4u,  5u,  6u,
+        4u,  6u,  7u,
+
+        // left
+        8u,  9u, 10u,
+        8u, 10u, 11u,
+
+        // right
+        12u, 13u, 14u,
+        12u, 14u, 15u,
+
+        // top
+        16u, 17u, 18u,
+        16u, 18u, 19u,
+
+        // bottom
+        20u, 21u, 22u,
+        20u, 22u, 23u,
     };
+
 
     VertexArray vao;
     vao.Bind();
@@ -120,6 +177,10 @@ void Game::Run()
 
     glEnable(GL_DEPTH_TEST);
 
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_Window.GetHeight()) / m_Window.GetWidth(), 0.1f, 100.0f);
+
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
         glfwPollEvents();
         ProcessInput(m_Window.GetWindow());
@@ -134,8 +195,9 @@ void Game::Run()
         texture.Bind();
         shader.Bind();
         vao.Bind();
-        int location = shader.GetUniformLocation("rotationMatrix");
-        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(rotationMatrix));
+        int location = shader.GetUniformLocation("transform");
+        glm::mat4 transform = projection * view * rotationMatrix;
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(transform));
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         // - GUI -
