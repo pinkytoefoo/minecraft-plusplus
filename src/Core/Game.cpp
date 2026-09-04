@@ -23,7 +23,7 @@
 #include "Graphics/Shader.hpp"
 #include "Graphics/Texture.hpp"
 
-glm::mat4 rotationMatrix = glm::mat4{1.0f};
+glm::vec2 rotationAngle{0.0f, 0.0f};
 
 // TODO: abstract
 // TODO: render over imgui dock
@@ -32,20 +32,15 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
     std::cout << message << '\n';
 }
 
-void ProcessInput(GLFWwindow* window) {
+void ProcessInput(GLFWwindow* window, float deltaTime) {
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotationAngle.x -= glm::radians(90.0f) * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotationAngle.x += glm::radians(90.0f) * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        rotationAngle.y -= glm::radians(90.0f) * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    //     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(1.0f), glm::vec3{0.0f, 1.0f, 0.0f});
-    
-    // if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    //     rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-1.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+        rotationAngle.y += glm::radians(90.0f) * deltaTime;
 }
 
 Game::Game()
@@ -179,11 +174,16 @@ void Game::Run()
 
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(m_Window.GetHeight()) / m_Window.GetWidth(), 0.1f, 100.0f);
-
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetHeight()) / m_Window.GetWidth(), 0.1f, 100.0f);
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
         glfwPollEvents();
-        ProcessInput(m_Window.GetWindow());
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        ProcessInput(m_Window.GetWindow(), deltaTime);
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -195,8 +195,11 @@ void Game::Run()
         texture.Bind();
         shader.Bind();
         vao.Bind();
+        model = glm::rotate(glm::mat4(1.0f), glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model, rotationAngle.y, glm::vec3(1.0f, 0.0f, 0.0f));
         int location = shader.GetUniformLocation("transform");
-        glm::mat4 transform = projection * view * rotationMatrix;
+        glm::mat4 transform = projection * view * model;
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(transform));
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
