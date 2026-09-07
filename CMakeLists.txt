@@ -26,4 +26,6 @@ include_directories(thirdparty/imgui)
 include_directories(thirdparty/imgui/backends)
 include_directories(thirdparty/stbi)
 
-target_link_libraries(MC-Clone glad glfw imgui opengl32 glm gdi32)
+if(WIN32)
+    target_link_libraries(MC-Clone glad glfw imgui opengl32 glm gdi32 dwmapi)
+endif()

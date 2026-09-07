@@ -25,6 +25,16 @@
 
 glm::vec2 rotationAngle{0.0f, 0.0f};
 
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#endif
+
 // TODO: abstract
 // TODO: render over imgui dock
 void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message, const void *userParam)
@@ -50,6 +60,14 @@ Game::Game()
     
     glfwMakeContextCurrent(m_Window.GetWindow());
     
+
+    // setting window to dark mode
+    #ifdef _WIN32
+    HWND hwnd = glfwGetWin32Window(m_Window.GetWindow());
+    BOOL value = TRUE;
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
+    #endif
+
     ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
 
     glEnable(GL_DEBUG_OUTPUT);
@@ -71,7 +89,7 @@ Game::Game()
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(m_Window.GetWindow(), true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init("#version 430");
 }
 
 Game::~Game()
@@ -150,6 +168,10 @@ void Game::Run()
         20u, 22u, 23u,
     };
 
+    const GLubyte* vendor    = glGetString(GL_VENDOR);
+    const GLubyte* renderer  = glGetString(GL_RENDERER);
+    const GLubyte* version   = glGetString(GL_VERSION);
+    const GLubyte* glsl_ver  = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     VertexArray vao;
     vao.Bind();
@@ -205,11 +227,50 @@ void Game::Run()
 
         // - GUI -
         ImGui::Begin("Configurer");
-
         ImGui::ColorEdit3("clear color", (float*)&clear_color);
         ImGui::ColorEdit3("triangle color", (float*)&triColor);
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Spacing();
+
+        if (ImGui::CollapsingHeader("System Diagnostics"))
+        {
+            ImGui::Spacing();
+            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(12.0f, 4.0f));
+
+            if (ImGui::BeginTable("SystemInfoTable", 2)) 
+            {
+                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("Vendor:");
+                ImGui::TableNextColumn(); ImGui::Text("%s", vendor);
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("Renderer:");
+                ImGui::TableNextColumn(); ImGui::Text("%s", renderer);
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Separator();
+                ImGui::TableNextColumn(); ImGui::Separator();
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("Version:");
+                ImGui::TableNextColumn(); ImGui::Text("%s", version);
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn(); ImGui::Text("GLSL version:");
+                ImGui::TableNextColumn(); ImGui::Text("%s", glsl_ver);
+
+                ImGui::EndTable();
+            }
+
+            ImGui::PopStyleVar();
+
+            ImGui::Spacing();
+            ImGui::Separator();
+        }
         ImGui::End();
         // - GUI -
         
