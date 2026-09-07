@@ -38,12 +38,16 @@ bool Window::Init()
        std::cerr << "window failed to create\n";
        return false;
     }
-    
+    glfwSetWindowUserPointer(m_Handle, this);   
     glfwSetWindowSizeCallback(m_Handle, [](GLFWwindow* window, int width, int height) {
-        int m_Width = width;
-        int m_Height = height;
+        Window* self = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        if(!self) {
+            throw std::runtime_error{"failed to retrieve window on resize"};
+        }
+        self->m_Width = width;
+        self->m_Height = height;
 
-        glViewport(0, 0, m_Width, m_Height);
+        glViewport(0, 0, self->m_Width, self->m_Height);
     });
 
     return true;
@@ -51,6 +55,5 @@ bool Window::Init()
 
 void Window::OnUpdate()
 {
-    glfwPollEvents();
     glfwSwapBuffers(m_Handle);
 }

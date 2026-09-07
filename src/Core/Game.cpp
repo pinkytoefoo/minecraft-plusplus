@@ -23,7 +23,9 @@
 #include "Graphics/Shader.hpp"
 #include "Graphics/Texture.hpp"
 
-glm::vec2 rotationAngle{0.0f, 0.0f};
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -43,14 +45,17 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
 }
 
 void ProcessInput(GLFWwindow* window, float deltaTime) {
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        rotationAngle.x -= glm::radians(90.0f) * deltaTime;
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        rotationAngle.x += glm::radians(90.0f) * deltaTime;
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        rotationAngle.y -= glm::radians(90.0f) * deltaTime;
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        rotationAngle.y += glm::radians(90.0f) * deltaTime;
+{
+    const float cameraSpeed = 0.25f;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+}
 }
 
 Game::Game()
@@ -196,7 +201,7 @@ void Game::Run()
 
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetHeight()) / m_Window.GetWidth(), 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
@@ -217,8 +222,10 @@ void Game::Run()
         texture.Bind();
         shader.Bind();
         vao.Bind();
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(glm::mat4(1.0f), glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        // model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
         // model = glm::rotate(model, rotationAngle.y, glm::vec3(1.0f, 0.0f, 0.0f));
         int location = shader.GetUniformLocation("transform");
         glm::mat4 transform = projection * view * model;
