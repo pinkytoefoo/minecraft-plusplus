@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(MC-Clone CXX C)
+project(mc CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(GLOB_RECURSE
     SOURCE_FILES
@@ -11,8 +12,7 @@ file(GLOB_RECURSE
     src/*.hpp
 )
 
-
-add_executable(MC-Clone ${SOURCE_FILES})
+add_executable(mc ${SOURCE_FILES})
 
 add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glm)
@@ -27,5 +27,15 @@ include_directories(thirdparty/imgui/backends)
 include_directories(thirdparty/stbi)
 
 if(WIN32)
-    target_link_libraries(MC-Clone glad glfw imgui opengl32 glm gdi32 dwmapi)
+    target_link_libraries(MC-Clone dwmapi)
 endif()
+
+find_package(OpenGL REQUIRED)
+
+target_link_libraries(mc
+    glad 
+    glfw 
+    imgui 
+    glm 
+    OpenGL::GL
+)
