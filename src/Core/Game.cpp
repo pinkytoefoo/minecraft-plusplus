@@ -44,7 +44,7 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
     std::cout << message << '\n';
 }
 
-void ProcessInput(GLFWwindow* window, float deltaTime) {
+void ProcessInput(GLFWwindow* window, float deltaTime)
 {
     const float cameraSpeed = 0.25f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -55,16 +55,19 @@ void ProcessInput(GLFWwindow* window, float deltaTime) {
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-}
+
 }
 
 Game::Game()
-    : m_Window(1024, 1024, "Minecraft++")
+    : m_Window{1024, 1024, "Minecraft++"}
 {
-    ASSERT_INIT(m_Window.Init());
+    GLFWimage images[1];
     
-    glfwMakeContextCurrent(m_Window.GetWindow());
+    images[0].pixels = stbi_load("assets/textures/dirt.png", &images[0].width, &images[0].height, 0, 4); 
     
+    glfwSetWindowIcon(m_Window.GetWindow(), 1, images);
+
+    stbi_image_free(images[0].pixels);
 
     // setting window to dark mode
     #ifdef _WIN32
@@ -74,6 +77,11 @@ Game::Game()
     #endif
 
     ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
+
+
+    m_Window.SetResizeCallback([this]() {
+        Render_();
+    });
 
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -85,13 +93,13 @@ Game::Game()
 
     glfwSwapInterval(1);
 
-    // glfwSetKeyCallback
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     ImGui::StyleColorsDark();
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf", 24.0f);
 
     ImGui_ImplGlfw_InitForOpenGL(m_Window.GetWindow(), true);
     ImGui_ImplOpenGL3_Init("#version 430");
@@ -105,6 +113,11 @@ Game::~Game()
     ImGui::DestroyContext();
     
     glfwTerminate();
+}
+
+void Game::Render_()
+{
+
 }
 
 void Game::Run()
@@ -173,10 +186,13 @@ void Game::Run()
         20u, 22u, 23u,
     };
 
+    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
+
     const GLubyte* vendor    = glGetString(GL_VENDOR);
     const GLubyte* renderer  = glGetString(GL_RENDERER);
     const GLubyte* version   = glGetString(GL_VERSION);
-    const GLubyte* glsl_ver  = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     VertexArray vao;
     vao.Bind();
@@ -186,22 +202,19 @@ void Game::Run()
     vao.LinkAttrib(vbo, 1, 2, GL_FLOAT, false, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     IndexBuffer ibo(indices.size() * sizeof(unsigned int), indices.data());
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    ImVec4 clear_color = ImVec4(0.2f, 0.5f, 0.7f, 1.0f);
     ImVec4 triColor = ImVec4(0.8f, 0.3f, 0.5f, 1.0f);
 
-    Shader shader("../assets/shaders/ttest.vert", "../assets/shaders/ttest.frag");
+    Shader shader("assets/shaders/ttest.vert", "assets/shaders/ttest.frag");
     shader.Bind();
 
-    Texture texture("../assets/textures/dirt.png");
+    Texture texture("assets/textures/dirt.png");
     texture.Bind();
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 model = glm::mat4(1.0f);
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
@@ -222,8 +235,8 @@ void Game::Run()
         texture.Bind();
         shader.Bind();
         vao.Bind();
-        // model = glm::rotate(glm::mat4(1.0f), glm::radians(-25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        // model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(glm::mat4(1.0f), glm::radians(25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
         // model = glm::rotate(model, rotationAngle.y, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -265,10 +278,6 @@ void Game::Run()
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn(); ImGui::Text("Version:");
                 ImGui::TableNextColumn(); ImGui::Text("%s", version);
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("GLSL version:");
-                ImGui::TableNextColumn(); ImGui::Text("%s", glsl_ver);
 
                 ImGui::EndTable();
             }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
 #include <glad/glad.h>
@@ -11,13 +12,28 @@ public:
     Window(int width, int height, std::string_view title);
     ~Window();
 
-    bool Init();
+    void SetResizeCallback(std::function<void(void)>&& callback)
+    {
+        m_ResizeCallback = std::forward<std::function<void(void)>>(callback);
+    }
+
     void OnUpdate();
-    GLFWwindow* GetWindow() { return m_Handle; }
-    int GetWidth() { return m_Width; }
-    int GetHeight() { return m_Height; }
+    GLFWwindow* GetWindow() const { return m_Handle; }
+    int GetWidth() const { return m_Data.Width; }
+    int GetHeight() const { return m_Data.Height; }
 private:
-    GLFWwindow* m_Handle;
-    int m_Width, m_Height;
-    std::string m_Title;
+    struct WindowData
+    {
+        WindowData() = default;
+        WindowData(int width, int height)
+            : Width{width}, Height{height}
+            , Maximized{false}
+        {
+        }
+        int Width{1024}, Height{1024};
+        bool Maximized{false};
+    };
+    WindowData m_Data;
+    GLFWwindow* m_Handle{nullptr};
+    std::function<void(void)> m_ResizeCallback;
 };
