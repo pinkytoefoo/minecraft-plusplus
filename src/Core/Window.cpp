@@ -1,5 +1,5 @@
-#include <iostream>
 #include <functional>
+#include <stdexcept>
 #include <string>
 
 #include <glad/glad.h>
@@ -44,10 +44,12 @@ Window::Window(int width, int height, const std::string& title)
     ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
     glViewport(0, 0, m_Data.Width, m_Data.Height);
 
-    GLFWimage images;
-    images.pixels = stbi_load("assets/textures/dirt.png", &images.width, &images.height, 0, 4); 
-    glfwSetWindowIcon(m_Handle, 1, &images);
-    stbi_image_free(images.pixels);
+    GLFWimage images[1];
+    images[0].pixels = stbi_load("assets/textures/dirt.png", &images[0].width, &images[0].height, 0, 4);
+    if (images[0].pixels) {
+        glfwSetWindowIcon(m_Handle, 1, images);
+        stbi_image_free(images[0].pixels);
+    }
 
     // setting window to dark mode
     #ifdef _WIN32
@@ -64,8 +66,8 @@ Window::Window(int width, int height, const std::string& title)
         self->m_Data.Height = height;
 
         glViewport(0, 0, self->m_Data.Width, self->m_Data.Height);
-        if(self->m_FramebufferCallback)
-            self->m_FramebufferCallback(width, height);
+
+        self->m_Queue.Push(Event{WindowResizeEvent{width, height}});
     });
 
     glfwSetKeyCallback(m_Handle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -80,6 +82,7 @@ Window::Window(int width, int height, const std::string& title)
                 (!glfwGetWindowAttrib(window, GLFW_MAXIMIZED)) ? glfwMaximizeWindow(window) : glfwRestoreWindow(window);
                 break;
         }
+        self->m_Queue.Push(Event{ KeyEvent{ key, scancode, action, mods } });
     });
 }
 

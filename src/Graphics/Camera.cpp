@@ -13,7 +13,7 @@ Camera::Camera(float ratio, float fov, float near_clip, float far_clip)
 
 void Camera::ProcessKeyboard(CameraDirection direction, float deltaTime)
 {
-    const float cameraSpeed = 0.25f;
+    const float cameraSpeed = 10.0f * deltaTime;
 
     switch(direction)
     {

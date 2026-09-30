@@ -1,3 +1,4 @@
+#include "Core/Event.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -34,11 +35,6 @@ Game::Game()
     : m_Window{1024, 1024, "Minecraft++"}
     , m_Camera{static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight()}
 {
-    m_Window.SetFramebufferCallback([this](int width, int height) {
-        m_Camera.SetAspectRatio(static_cast<float>(width)/height);
-        Render_();
-    });
-
     #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -57,8 +53,34 @@ Game::Game()
     io.Fonts->Clear();
     io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf", 24.0f);
 
-    ImGui_ImplGlfw_InitForOpenGL(m_Window.GetWindow(), true);
+    ImGui_ImplGlfw_InitForOpenGL(m_Window.NativeHandle(), true);
     ImGui_ImplOpenGL3_Init("#version 430");
+}
+
+void Game::ProcessEvents()
+{
+    Event genericEvent;
+    while(m_Window.PollEvent(genericEvent))
+    {
+        std::visit(Overloaded {
+            [&](const KeyEvent& e) {
+                if(e.action == GLFW_PRESS)
+                    std::cout << "Key pressed: " << e.key << '\n';
+            },
+            [&](const MouseMoveEvent& e) {
+                // if(e.action == GLFW_PRESS)
+                //     std::cout << "Key pressed: " << e.key << '\n';
+            },
+            [&](const MouseClickEvent& e) {
+                // if(e.action == GLFW_PRESS)
+                //     std::cout << "Key pressed: " << e.key << '\n';
+            },
+            [&](const WindowResizeEvent& e) {
+                m_Camera.SetAspectRatio(static_cast<float>(e.width)/e.height);
+                Render_();
+            }
+        }, genericEvent.Data);
+    }
 }
 
 Game::~Game()
@@ -171,20 +193,21 @@ void Game::Run()
     double deltaTime = 0.0f;
     double lastFrame = 0.0f;
     float lastX, lastY;
-    while(!glfwWindowShouldClose(m_Window.GetWindow())) {
+    while(!glfwWindowShouldClose(m_Window.NativeHandle())) {
         double currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         glfwPollEvents();
+        ProcessEvents();
 
-       if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_W) == GLFW_PRESS)
+       if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_W) == GLFW_PRESS)
             m_Camera.ProcessKeyboard(CameraDirection::FORWARD, deltaTime);
-        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_S) == GLFW_PRESS)
+        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_S) == GLFW_PRESS)
             m_Camera.ProcessKeyboard(CameraDirection::BACKWARD, deltaTime);
-        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_A) == GLFW_PRESS)
+        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_A) == GLFW_PRESS)
             m_Camera.ProcessKeyboard(CameraDirection::LEFT, deltaTime);
-        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_D) == GLFW_PRESS)
+        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_D) == GLFW_PRESS)
             m_Camera.ProcessKeyboard(CameraDirection::RIGHT, deltaTime);
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -256,6 +279,6 @@ void Game::Run()
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        glfwSwapBuffers(m_Window.GetWindow());
+        glfwSwapBuffers(m_Window.NativeHandle());
     }
 }

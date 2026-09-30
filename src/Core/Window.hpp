@@ -6,6 +6,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Event.hpp"
+#include "Util/SPSCQueue.hpp"
+
 class Window
 {
 public:
@@ -16,16 +19,19 @@ public:
     Window(Window&&) = delete;
     void operator=(Window&&) = delete;
 
-    void SetFramebufferCallback(std::function<void(int width, int height)> callback)
+    bool PollEvent(Event& outEvent)
     {
-        m_FramebufferCallback = std::move(callback);
+        return m_Queue.Pop(outEvent);
     }
-
-    GLFWwindow* GetWindow() const { return m_Handle; }
+    
+    using EventQueue = SPSCQueue<Event, 128>;
+    EventQueue& GetEventQueue() { return m_Queue; }
+    GLFWwindow* NativeHandle() const { return m_Handle; }
     int GetWidth() const { return m_Data.Width; }
     int GetHeight() const { return m_Data.Height; }
+
 private:
-    std::function<void(int width, int height)> m_FramebufferCallback;
+    EventQueue m_Queue;
 
     GLFWwindow* m_Handle{nullptr};
     struct WindowData

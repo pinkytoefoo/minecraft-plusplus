@@ -13,8 +13,10 @@ public:
     ~Game();
 
     void Run();
+
 private:
     void Render_();
+    void ProcessEvents();
     
     NO_UNIQUE_ADDRESS
     GlfwContext m_GlfwContext;
