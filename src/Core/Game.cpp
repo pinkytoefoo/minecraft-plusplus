@@ -23,20 +23,6 @@
 #include "Graphics/Shader.hpp"
 #include "Graphics/Texture.hpp"
 
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
-
-#ifdef _WIN32
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#include <dwmapi.h>
-
-#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
-#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#endif
-#endif
-
 // TODO: abstract
 // TODO: render over imgui dock
 void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message, const void *userParam)
@@ -44,52 +30,22 @@ void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,
     std::cout << message << '\n';
 }
 
-void ProcessInput(GLFWwindow* window, float deltaTime)
-{
-    const float cameraSpeed = 0.25f;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-
-}
-
 Game::Game()
     : m_Window{1024, 1024, "Minecraft++"}
+    , m_Camera{static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight()}
 {
-    GLFWimage images[1];
-    
-    images[0].pixels = stbi_load("assets/textures/dirt.png", &images[0].width, &images[0].height, 0, 4); 
-    
-    glfwSetWindowIcon(m_Window.GetWindow(), 1, images);
-
-    stbi_image_free(images[0].pixels);
-
-    // setting window to dark mode
-    #ifdef _WIN32
-    HWND hwnd = glfwGetWin32Window(m_Window.GetWindow());
-    BOOL value = TRUE;
-    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
-    #endif
-
-    ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
-
-
-    m_Window.SetResizeCallback([this]() {
+    m_Window.SetFramebufferCallback([this](int width, int height) {
+        m_Camera.SetAspectRatio(static_cast<float>(width)/height);
         Render_();
     });
 
+    #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(GLDebugMessageCallback, this);
-    glfwSetFramebufferSizeCallback(m_Window.GetWindow(), [](GLFWwindow* window, int width, int height) {
-        glViewport(0, 0, width, height);
-        // Render_();
-    });
+    #endif
+
+    glEnable(GL_CULL_FACE);
 
     glfwSwapInterval(1);
 
@@ -107,12 +63,9 @@ Game::Game()
 
 Game::~Game()
 {
-    std::cout << "Destroying Game ...\n";
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    
-    glfwTerminate();
 }
 
 void Game::Render_()
@@ -215,15 +168,25 @@ void Game::Run()
 
     glEnable(GL_DEPTH_TEST);
 
-    float deltaTime = 0.0f;
-    float lastFrame = 0.0f;
+    double deltaTime = 0.0f;
+    double lastFrame = 0.0f;
+    float lastX, lastY;
     while(!glfwWindowShouldClose(m_Window.GetWindow())) {
-        glfwPollEvents();
-        float currentFrame = glfwGetTime();
+        double currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        ProcessInput(m_Window.GetWindow(), deltaTime);
+        glfwPollEvents();
+
+       if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_W) == GLFW_PRESS)
+            m_Camera.ProcessKeyboard(CameraDirection::FORWARD, deltaTime);
+        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_S) == GLFW_PRESS)
+            m_Camera.ProcessKeyboard(CameraDirection::BACKWARD, deltaTime);
+        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_A) == GLFW_PRESS)
+            m_Camera.ProcessKeyboard(CameraDirection::LEFT, deltaTime);
+        if (glfwGetKey(m_Window.GetWindow(), GLFW_KEY_D) == GLFW_PRESS)
+            m_Camera.ProcessKeyboard(CameraDirection::RIGHT, deltaTime);
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -237,8 +200,8 @@ void Game::Run()
         vao.Bind();
         model = glm::rotate(glm::mat4(1.0f), glm::radians(25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
+        view = m_Camera.GetViewMatrix();
+        projection = m_Camera.GetProjectionMatrix();
         // model = glm::rotate(model, rotationAngle.y, glm::vec3(1.0f, 0.0f, 0.0f));
         int location = shader.GetUniformLocation("transform");
         glm::mat4 transform = projection * view * model;

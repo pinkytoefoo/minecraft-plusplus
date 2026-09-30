@@ -9,31 +9,32 @@
 class Window
 {
 public:
-    Window(int width, int height, std::string_view title);
+    Window(int width, int height, const std::string& title /* must be null terminated*/);
     ~Window();
+    Window(const Window&) = delete;
+    void operator=(const Window&) = delete;
+    Window(Window&&) = delete;
+    void operator=(Window&&) = delete;
 
-    void SetResizeCallback(std::function<void(void)>&& callback)
+    void SetFramebufferCallback(std::function<void(int width, int height)> callback)
     {
-        m_ResizeCallback = std::forward<std::function<void(void)>>(callback);
+        m_FramebufferCallback = std::move(callback);
     }
 
-    void OnUpdate();
     GLFWwindow* GetWindow() const { return m_Handle; }
     int GetWidth() const { return m_Data.Width; }
     int GetHeight() const { return m_Data.Height; }
 private:
+    std::function<void(int width, int height)> m_FramebufferCallback;
+
+    GLFWwindow* m_Handle{nullptr};
     struct WindowData
     {
-        WindowData() = default;
         WindowData(int width, int height)
             : Width{width}, Height{height}
-            , Maximized{false}
         {
         }
-        int Width{1024}, Height{1024};
-        bool Maximized{false};
+        int Width, Height;
     };
     WindowData m_Data;
-    GLFWwindow* m_Handle{nullptr};
-    std::function<void(void)> m_ResizeCallback;
 };
