@@ -1,6 +1,3 @@
-#include "Core/Event.hpp"
-#include <iostream>
-#include <vector>
 #include <string>
 #include <array>
 
@@ -10,30 +7,60 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "Game.hpp"
-#include "Util.hpp"
+#include "Event.hpp"
 #include "Graphics/VertexArray.hpp"
 #include "Graphics/VertexBuffer.hpp"
 #include "Graphics/IndexBuffer.hpp"
 #include "Graphics/Shader.hpp"
 #include "Graphics/Texture.hpp"
 
-// TODO: abstract
-// TODO: render over imgui dock
-void GLDebugMessageCallback(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message, const void *userParam)
+void Game::ProcessEvents_()
 {
-    std::cout << message << '\n';
+    Event event;
+    while(m_Window.PollEvent(event))
+    {
+        std::visit(Overloaded {
+            [&](const KeyEvent& e) {
+                if(e.action == GLFW_REPEAT)
+                    return;
+                
+                if (e.key >= 0 && e.key < GLFW_KEY_LAST)
+                    m_Keys[static_cast<std::size_t>(e.key)] = e.action;
+            },
+            [&](const MouseMoveEvent& e) {
+
+            },
+            [&](const MouseClickEvent& e) {
+
+            },
+            [&](const WindowResizeEvent& e) {
+                if (e.height == 0) // avoid divide by 0 when minimized
+                    return;
+
+                m_Camera.SetAspectRatio(static_cast<float>(e.width) / e.height);
+                Render_();
+            },
+        }, event.Data);
+    }
+}
+
+void Game::ProcessInputs_(float dt)
+{
+    if (m_Keys[GLFW_KEY_W])
+        m_Camera.ProcessKeyboard(CameraDirection::FORWARD, dt);
+    if (m_Keys[GLFW_KEY_S])
+        m_Camera.ProcessKeyboard(CameraDirection::BACKWARD, dt);
+    if (m_Keys[GLFW_KEY_A])
+        m_Camera.ProcessKeyboard(CameraDirection::LEFT, dt);
+    if (m_Keys[GLFW_KEY_D])
+        m_Camera.ProcessKeyboard(CameraDirection::RIGHT, dt);
 }
 
 Game::Game()
     : m_Window{1024, 1024, "Minecraft++"}
     , m_Camera{static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight()}
+    , m_GuiContext{m_Window.NativeHandle()}
 {
     #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -42,52 +69,9 @@ Game::Game()
     #endif
 
     glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 
     glfwSwapInterval(1);
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    ImGui::StyleColorsDark();
-    io.Fonts->Clear();
-    io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf", 24.0f);
-
-    ImGui_ImplGlfw_InitForOpenGL(m_Window.NativeHandle(), true);
-    ImGui_ImplOpenGL3_Init("#version 430");
-}
-
-void Game::ProcessEvents()
-{
-    Event genericEvent;
-    while(m_Window.PollEvent(genericEvent))
-    {
-        std::visit(Overloaded {
-            [&](const KeyEvent& e) {
-                if(e.action == GLFW_PRESS)
-                    std::cout << "Key pressed: " << e.key << '\n';
-            },
-            [&](const MouseMoveEvent& e) {
-                // if(e.action == GLFW_PRESS)
-                //     std::cout << "Key pressed: " << e.key << '\n';
-            },
-            [&](const MouseClickEvent& e) {
-                // if(e.action == GLFW_PRESS)
-                //     std::cout << "Key pressed: " << e.key << '\n';
-            },
-            [&](const WindowResizeEvent& e) {
-                m_Camera.SetAspectRatio(static_cast<float>(e.width)/e.height);
-                Render_();
-            }
-        }, genericEvent.Data);
-    }
-}
-
-Game::~Game()
-{
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
 }
 
 void Game::Render_()
@@ -165,20 +149,21 @@ void Game::Run()
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection = glm::perspective(glm::radians(90.0f), static_cast<float>(m_Window.GetWidth()) / m_Window.GetHeight(), 0.1f, 100.0f);
 
-    const GLubyte* vendor    = glGetString(GL_VENDOR);
-    const GLubyte* renderer  = glGetString(GL_RENDERER);
-    const GLubyte* version   = glGetString(GL_VERSION);
-
+    VertexBuffer vbo(vertices.data(), vertices.size() * sizeof(float));
+    IndexBuffer ibo(indices.data(), indices.size() * sizeof(unsigned int));
+    // 2. Setup VAO layouts via DSA (Zero global state side-effects)
     VertexArray vao;
-    vao.Bind();
-    // vbo already binded at construction
-    VertexBuffer vbo(vertices.size() * sizeof(float), vertices.data());
-    vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, false, 5 * sizeof(float), 0);
-    vao.LinkAttrib(vbo, 1, 2, GL_FLOAT, false, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    
+    unsigned int currentAttrib{0};
+    unsigned int posCount{3};
+    // Attribute 0: Positions (3 floats)
+    vao.LinkAttribute(currentAttrib++, 0, posCount, GL_FLOAT, GL_FALSE, 0); 
+    // Attribute 1: UVs (2 floats)
+    vao.LinkAttribute(currentAttrib++, 0, 2, GL_FLOAT, GL_FALSE, posCount * sizeof(float)); 
 
-    IndexBuffer ibo(indices.size() * sizeof(unsigned int), indices.data());
-    ImVec4 clear_color = ImVec4(0.2f, 0.5f, 0.7f, 1.0f);
-    ImVec4 triColor = ImVec4(0.8f, 0.3f, 0.5f, 1.0f);
+    vao.BindVertexBuffer(0, vbo.GetId(), 0, 5 * sizeof(float));
+
+    vao.BindIndexBuffer(ibo.GetId());
 
     Shader shader("assets/shaders/ttest.vert", "assets/shaders/ttest.frag");
     shader.Bind();
@@ -186,99 +171,39 @@ void Game::Run()
     Texture texture("assets/textures/dirt.png");
     texture.Bind();
 
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-    glEnable(GL_DEPTH_TEST);
-
     double deltaTime = 0.0f;
     double lastFrame = 0.0f;
-    float lastX, lastY;
-    while(!glfwWindowShouldClose(m_Window.NativeHandle())) {
+
+    while(m_Window.IsRunning()) {
         double currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
         glfwPollEvents();
-        ProcessEvents();
+        ProcessEvents_();
 
-       if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_W) == GLFW_PRESS)
-            m_Camera.ProcessKeyboard(CameraDirection::FORWARD, deltaTime);
-        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_S) == GLFW_PRESS)
-            m_Camera.ProcessKeyboard(CameraDirection::BACKWARD, deltaTime);
-        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_A) == GLFW_PRESS)
-            m_Camera.ProcessKeyboard(CameraDirection::LEFT, deltaTime);
-        if (glfwGetKey(m_Window.NativeHandle(), GLFW_KEY_D) == GLFW_PRESS)
-            m_Camera.ProcessKeyboard(CameraDirection::RIGHT, deltaTime);
+        ProcessInputs_(deltaTime);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        ImVec4 clear_color = m_Gui.GetClearColor();
 
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // shader.SetUniform("triColor", triColor.x, triColor.y, triColor.z, triColor.w);
-        texture.Bind();
-        shader.Bind();
+        // texture.Bind();
+        // shader.Bind();
         vao.Bind();
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(25.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        model = glm::rotate(model, static_cast<float>(1.0f * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
         view = m_Camera.GetViewMatrix();
         projection = m_Camera.GetProjectionMatrix();
-        // model = glm::rotate(model, rotationAngle.y, glm::vec3(1.0f, 0.0f, 0.0f));
-        int location = shader.GetUniformLocation("transform");
-        glm::mat4 transform = projection * view * model;
-        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(transform));
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-
-        // - GUI -
-        ImGui::Begin("Configurer");
-        ImGui::ColorEdit3("clear color", (float*)&clear_color);
-        ImGui::ColorEdit3("triangle color", (float*)&triColor);
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::Spacing();
-
-        if (ImGui::CollapsingHeader("System Diagnostics"))
-        {
-            ImGui::Spacing();
-            ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(12.0f, 4.0f));
-
-            if (ImGui::BeginTable("SystemInfoTable", 2)) 
-            {
-                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 100.0f);
-                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("Vendor:");
-                ImGui::TableNextColumn(); ImGui::Text("%s", vendor);
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("Renderer:");
-                ImGui::TableNextColumn(); ImGui::Text("%s", renderer);
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Separator();
-                ImGui::TableNextColumn(); ImGui::Separator();
-
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn(); ImGui::Text("Version:");
-                ImGui::TableNextColumn(); ImGui::Text("%s", version);
-
-                ImGui::EndTable();
-            }
-
-            ImGui::PopStyleVar();
-
-            ImGui::Spacing();
-            ImGui::Separator();
-        }
-        ImGui::End();
-        // - GUI -
         
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(m_Window.NativeHandle());
+        shader.SetMat4("transform", projection * view * model);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        
+        m_GuiContext.StartFrame();
+        m_Gui.OnUpdate();
+        m_GuiContext.EndFrame();
+        
+        m_Window.SwapBuffers();
     }
 }

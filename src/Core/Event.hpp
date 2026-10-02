@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <variant>
 
-template<class... Ts> struct Overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> Overloaded(Ts...) -> Overloaded<Ts...>;
+template<typename... Ts> struct Overloaded : Ts... { using Ts::operator()...; };
+template<typename... Ts> Overloaded(Ts...) -> Overloaded<Ts...>;
 
 enum class EventType : uint8_t
 {

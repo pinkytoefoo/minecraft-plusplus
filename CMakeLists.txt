@@ -25,6 +25,17 @@ else()
     target_compile_options(mc_warnings INTERFACE -Wall -Wextra -Wshadow -Wconversion)
 endif()
 
+# asan only shows leaks for wayland and driver caches
+# add_library(mc_asan INTERFACE)
+# if(MSVC)
+#     target_compile_options(mc_asan INTERFACE /fsanitize=address)
+#     target_link_options(mc_asan INTERFACE /fsanitize=address)
+# else()
+#     target_compile_options(mc_asan INTERFACE -fsanitize=address -fno-omit-frame-pointer -g)
+#
+#     target_link_options(mc_asan INTERFACE -fsanitize=address)
+# endif()
+
 file(GLOB_RECURSE MC_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_executable(mc ${MC_SOURCES})
 
@@ -39,6 +50,7 @@ target_include_directories(mc PRIVATE
 )
 
 target_compile_definitions(mc PRIVATE GLFW_INCLUDE_NONE)
+
 target_link_libraries(mc PRIVATE mc_warnings glad glfw imgui glm stb)
 if(WIN32)
     target_link_libraries(mc PRIVATE dwmapi)

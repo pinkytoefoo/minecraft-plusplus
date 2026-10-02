@@ -1,29 +1,21 @@
-#include <iostream>
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "VertexBuffer.hpp"
 
-VertexBuffer::VertexBuffer(unsigned int size, const void* data)
+VertexBuffer::VertexBuffer(const void* data, size_t size, GLbitfield flags)
 {
-    glGenBuffers(1, &m_ID);
-    glBindBuffer(GL_ARRAY_BUFFER, m_ID);
-    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    glCreateBuffers(1, &m_Id);
+    glNamedBufferStorage(m_Id, static_cast<GLsizeiptr>(size), data, flags);
 }
 
 VertexBuffer::~VertexBuffer()
 {
-    std::cout << "Deleting Vertex Buffer ...\n";
-    glDeleteBuffers(1, &m_ID);
+    glDeleteBuffers(1, &m_Id);
 }
 
-void VertexBuffer::Bind()
+void VertexBuffer::UpdateSubData(GLintptr offset, GLsizeiptr size, const void* data)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, m_ID);
+    glNamedBufferSubData(m_Id, offset, size, data);
 }
 
-void VertexBuffer::Unbind()
-{
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}

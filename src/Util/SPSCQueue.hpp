@@ -1,12 +1,15 @@
 #pragma once
 
-
 #include <atomic>
 #include <cstddef>
 #include <new>
 #include <array>
 
+#ifdef __cpp_lib_hardware_interference_size
 constexpr size_t k_CacheLineSize = std::hardware_destructive_interference_size;
+#else
+constexpr size_t k_CacheLineSize = 64;
+#endif
 
 template<typename T, size_t Capacity>
 class SPSCQueue
@@ -44,7 +47,7 @@ public:
 
 private:
     static constexpr size_t k_Mask = Capacity - 1;
+    alignas(k_CacheLineSize) std::atomic<size_t> m_Head{};
+    alignas(k_CacheLineSize) std::atomic<size_t> m_Tail{};
     std::array<T, Capacity> m_Buffer;
-    alignas(k_CacheLineSize) std::atomic<size_t> m_Head;
-    alignas(k_CacheLineSize) std::atomic<size_t> m_Tail;
 };

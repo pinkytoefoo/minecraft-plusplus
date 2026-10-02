@@ -1,4 +1,3 @@
-#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -28,8 +27,6 @@ Window::Window(int width, int height, const std::string& title)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU, GLFW_TRUE);
-    // glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-    // glfwWindowHint(GLFW_SAMPLES, 8);
 
     m_Handle = glfwCreateWindow(m_Data.Width, m_Data.Height, title.data(), nullptr, nullptr);
 
@@ -44,6 +41,7 @@ Window::Window(int width, int height, const std::string& title)
     ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
     glViewport(0, 0, m_Data.Width, m_Data.Height);
 
+    // todo: add icons of difference sizes
     GLFWimage images[1];
     images[0].pixels = stbi_load("assets/textures/dirt.png", &images[0].width, &images[0].height, 0, 4);
     if (images[0].pixels) {
@@ -71,18 +69,40 @@ Window::Window(int width, int height, const std::string& title)
     });
 
     glfwSetKeyCallback(m_Handle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-        if(action != GLFW_PRESS)
-            return;
-        
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
 
+        
         switch(key)
         {
             case GLFW_KEY_F11:
-                (!glfwGetWindowAttrib(window, GLFW_MAXIMIZED)) ? glfwMaximizeWindow(window) : glfwRestoreWindow(window);
+                if(action != GLFW_PRESS)
+                    break;
+
+                if(!glfwGetWindowAttrib(window, GLFW_MAXIMIZED))
+                    glfwMaximizeWindow(window);
+                else
+                    glfwRestoreWindow(window);
+                break;
+
+            case GLFW_KEY_M:
+                if(action != GLFW_PRESS)
+                    break;
+
+                printf("HIT");
+                if (glfwRawMouseMotionSupported())
+                {
+                    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+                }
+                break;
+
+            default:
+                self->m_Queue.Push(Event{KeyEvent{key, scancode, action, mods}});
                 break;
         }
-        self->m_Queue.Push(Event{ KeyEvent{ key, scancode, action, mods } });
+    });
+
+    glfwSetErrorCallback([](int code, const char* message) {
+        std::cerr << "glfwError:\n\tcode - 0x"<< std::hex << code << "\n\tmessage: " << message << "\n";
     });
 }
 

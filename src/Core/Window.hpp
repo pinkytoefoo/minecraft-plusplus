@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+#include <cstdint>
 #include <string>
 
 #include <glad/glad.h>
@@ -24,13 +24,15 @@ public:
         return m_Queue.Pop(outEvent);
     }
     
-    using EventQueue = SPSCQueue<Event, 128>;
-    EventQueue& GetEventQueue() { return m_Queue; }
+    bool IsRunning() const { return !glfwWindowShouldClose(m_Handle); }
+    void SwapBuffers() const { glfwSwapBuffers(m_Handle); }
+    
     GLFWwindow* NativeHandle() const { return m_Handle; }
     int GetWidth() const { return m_Data.Width; }
     int GetHeight() const { return m_Data.Height; }
 
 private:
+    using EventQueue = SPSCQueue<Event, 128>;
     EventQueue m_Queue;
 
     GLFWwindow* m_Handle{nullptr};
@@ -41,6 +43,7 @@ private:
         {
         }
         int Width, Height;
+        bool IsMouseCaptured{false};
     };
     WindowData m_Data;
 };

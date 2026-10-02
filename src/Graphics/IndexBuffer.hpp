@@ -6,11 +6,13 @@
 class IndexBuffer
 {
 public:
-    IndexBuffer(GLsizeiptr size, const GLuint* indices);
+    IndexBuffer(const GLuint* indices, GLsizeiptr size);
     ~IndexBuffer();
 
     void Bind();
     void Unbind();
+    unsigned int GetId() const { return m_Id; }
+
 private:
-    unsigned int m_ID;
+    unsigned int m_Id;
 };

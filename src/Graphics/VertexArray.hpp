@@ -11,11 +11,12 @@ public:
     VertexArray();
     ~VertexArray();
 
-    // using GLuint because 'unsigned int' is too long
-    void LinkAttrib(VertexBuffer& VBO, GLuint location, GLuint size, GLuint type, bool normalized, int stride, const void* offset);
+    void LinkAttribute(GLuint attribIndex, GLuint bindingSlot, GLint size, GLenum type, GLboolean normalized, GLuint relativeOffset);
 
+    void BindVertexBuffer(GLuint bindingSlot, GLuint bufferHandle, GLintptr offset, GLsizei stride);
+    void BindIndexBuffer(GLuint indexBufferHandle);
     void Bind();
-    void Unbind();
+
 private:
-    unsigned int m_ID;
+    unsigned int m_Id{};
 };

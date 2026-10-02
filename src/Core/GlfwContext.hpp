@@ -9,10 +9,7 @@ struct GlfwContext
 {
     GlfwContext() { ASSERT_INIT(glfwInit()); };
 
-    ~GlfwContext()
-    {
-        glfwTerminate();
-    }
+    ~GlfwContext() { glfwTerminate(); }
 
     GlfwContext(const GlfwContext&) = delete;
     GlfwContext& operator=(const GlfwContext&) = delete;
