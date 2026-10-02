@@ -7,7 +7,14 @@
 
 struct GlfwContext
 {
-    GlfwContext() { ASSERT_INIT(glfwInit()); };
+    GlfwContext()
+    {
+        ASSERT_INIT(glfwInit());
+  
+        glfwSetErrorCallback([](int code, const char* message) {
+            std::cerr << "glfwError:\n\tcode - 0x"<< std::hex << code << "\n\tmessage: " << message << "\n";
+        });
+    };
 
     ~GlfwContext() { glfwTerminate(); }
 

@@ -100,10 +100,6 @@ Window::Window(int width, int height, const std::string& title)
                 break;
         }
     });
-
-    glfwSetErrorCallback([](int code, const char* message) {
-        std::cerr << "glfwError:\n\tcode - 0x"<< std::hex << code << "\n\tmessage: " << message << "\n";
-    });
 }
 
 Window::~Window()

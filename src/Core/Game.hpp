@@ -7,7 +7,6 @@
 #include "Core/Util.hpp"
 #include "Graphics/Camera.hpp"
 #include "Window.hpp"
-#include "GlfwContext.hpp"
 #include "Gui/DebugGui.hpp"
 #include "Gui/GuiContext.hpp"
 
@@ -23,8 +22,6 @@ private:
     void ProcessEvents_();
     void ProcessInputs_(float dt);
     
-    GlfwContext m_GlfwContext NO_UNIQUE_ADDRESS;
-
     Window m_Window;
     Camera m_Camera;
 

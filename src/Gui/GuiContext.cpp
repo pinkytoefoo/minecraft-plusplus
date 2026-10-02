@@ -1,3 +1,7 @@
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_glfw.h>
+
 #include "GuiContext.hpp"
 
 GuiContext::GuiContext(GLFWwindow* window)
@@ -8,7 +12,8 @@ GuiContext::GuiContext(GLFWwindow* window)
     ImGui::StyleColorsDark();
     
     ImGuiIO& io = ImGui::GetIO();
-
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; 
     // io.Fonts->Clear();
     // io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf", 24.0f);
 
