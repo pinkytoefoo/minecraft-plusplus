@@ -14,8 +14,8 @@ GuiContext::GuiContext(GLFWwindow* window)
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; 
-    // io.Fonts->Clear();
-    // io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf", 24.0f);
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf");
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 430");

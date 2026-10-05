@@ -12,7 +12,7 @@ endif()
 
 add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glm)
-add_subdirectory(thirdparty/imgui)
+add_subdirectory(cmake/imgui_build)
 add_subdirectory(thirdparty/glad)
 
 add_library(stb INTERFACE)
