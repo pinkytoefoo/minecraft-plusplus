@@ -12,20 +12,21 @@
 class Window
 {
 public:
-    Window(int width, int height, const std::string& title /* must be null terminated*/);
+    Window(int width, int height, const std::string& title /* must be null terminated, so use str ref instead of view */);
     ~Window();
     Window(const Window&) = delete;
     void operator=(const Window&) = delete;
     Window(Window&&) = delete;
     void operator=(Window&&) = delete;
 
-    bool PollEvent(Event& outEvent)
+    bool GetEventFromQueue(Event& outEvent)
     {
         return m_Queue.Pop(outEvent);
     }
     
     bool IsRunning() const { return !glfwWindowShouldClose(m_Handle); }
-    void SwapBuffers() const { glfwSwapBuffers(m_Handle); }
+    inline void SwapBuffers() const { glfwSwapBuffers(m_Handle); }
+    inline void PollEvents() const { glfwPollEvents(); }
     
     GLFWwindow* NativeHandle() const { return m_Handle; }
     int GetWidth() const { return m_Data.Width; }

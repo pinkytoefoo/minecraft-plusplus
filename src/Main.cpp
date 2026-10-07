@@ -6,8 +6,21 @@
 
 int main()
 {
-    GlfwContext glfwContext;
+    try
+    {
+        GlfwContext glfwContext;
 
-    Game game;
-    game.Run();
+        Game game;
+        game.Run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "exception caught: " << e.what() << '\n';
+        return 1;
+    }
+    catch (...)
+    {
+        std::cerr << "unknown exception caught\n";
+        return 1;
+    }
 }

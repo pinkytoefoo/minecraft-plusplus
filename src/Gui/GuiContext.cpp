@@ -18,7 +18,7 @@ GuiContext::GuiContext(GLFWwindow* window)
     io.Fonts->AddFontFromFileTTF("assets/fonts/Minecraft-Regular.ttf");
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 430");
+    ImGui_ImplOpenGL3_Init("#version 460");
 }
 
 GuiContext::~GuiContext()

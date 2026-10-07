@@ -23,10 +23,11 @@ Window::Window(int width, int height, const std::string& title)
     : m_Data{width, height}
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU, GLFW_TRUE);
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
     m_Handle = glfwCreateWindow(m_Data.Width, m_Data.Height, title.data(), nullptr, nullptr);
 
@@ -38,7 +39,10 @@ Window::Window(int width, int height, const std::string& title)
     glfwGetFramebufferSize(m_Handle, &m_Data.Width, &m_Data.Height);
 
     glfwMakeContextCurrent(m_Handle);
-    ASSERT_INIT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress));
+    // start implementing exceptions
+    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
     glViewport(0, 0, m_Data.Width, m_Data.Height);
 
     // todo: add icons of difference sizes
@@ -71,34 +75,41 @@ Window::Window(int width, int height, const std::string& title)
     glfwSetKeyCallback(m_Handle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
 
-        
         switch(key)
         {
             case GLFW_KEY_F11:
                 if(action != GLFW_PRESS)
                     break;
-
                 if(!glfwGetWindowAttrib(window, GLFW_MAXIMIZED))
                     glfwMaximizeWindow(window);
                 else
                     glfwRestoreWindow(window);
                 break;
 
-            case GLFW_KEY_M:
+            case GLFW_KEY_ESCAPE:
                 if(action != GLFW_PRESS)
                     break;
 
-                printf("HIT");
-                if (glfwRawMouseMotionSupported())
-                {
-                    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-                }
+                if(glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                else
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                // if (glfwRawMouseMotionSupported())
+                // {
+                //     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+                // }
                 break;
 
             default:
                 self->m_Queue.Push(Event{KeyEvent{key, scancode, action, mods}});
                 break;
         }
+    });
+
+    glfwSetCursorPosCallback(m_Handle, [](GLFWwindow* window, double xpos, double ypos) {
+        Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+        self->m_Queue.Push(Event{MouseMoveEvent{xpos, ypos}});
     });
 }
 

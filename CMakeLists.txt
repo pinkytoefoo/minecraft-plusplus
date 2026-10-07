@@ -36,7 +36,7 @@ endif()
 #     target_link_options(mc_asan INTERFACE -fsanitize=address)
 # endif()
 
-file(GLOB_RECURSE MC_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+file(GLOB_RECURSE MC_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.hpp)
 add_executable(mc ${MC_SOURCES})
 
 target_include_directories(mc PRIVATE

@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#define GLM_FORCE_CONSTEXPR
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -21,7 +22,7 @@
 void Game::ProcessEvents_()
 {
     Event event;
-    while(m_Window.PollEvent(event))
+    while(m_Window.GetEventFromQueue(event))
     {
         std::visit(Overloaded {
             [&](const KeyEvent& e) {
@@ -32,7 +33,7 @@ void Game::ProcessEvents_()
                     m_Keys[static_cast<std::size_t>(e.key)] = e.action;
             },
             [&](const MouseMoveEvent& e) {
-
+                m_Camera.ProcessMouse(e.xpos, e.ypos);
             },
             [&](const MouseClickEvent& e) {
 
@@ -50,14 +51,16 @@ void Game::ProcessEvents_()
 
 void Game::ProcessInputs_(float dt)
 {
-    if (m_Keys[GLFW_KEY_W])
-        m_Camera.ProcessKeyboard(CameraDirection::FORWARD, dt);
-    if (m_Keys[GLFW_KEY_S])
-        m_Camera.ProcessKeyboard(CameraDirection::BACKWARD, dt);
-    if (m_Keys[GLFW_KEY_A])
-        m_Camera.ProcessKeyboard(CameraDirection::LEFT, dt);
-    if (m_Keys[GLFW_KEY_D])
-        m_Camera.ProcessKeyboard(CameraDirection::RIGHT, dt);
+    CameraDirection direction = CameraDirection::None;
+
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Forward)  * m_Keys[GLFW_KEY_W]);
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Backward) * m_Keys[GLFW_KEY_S]);
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Left)     * m_Keys[GLFW_KEY_A]);
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Right)    * m_Keys[GLFW_KEY_D]);
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Up)       * m_Keys[GLFW_KEY_SPACE]);
+    direction |= static_cast<CameraDirection>(static_cast<int>(CameraDirection::Down)     * m_Keys[GLFW_KEY_LEFT_CONTROL]);
+    
+    m_Camera.ProcessKeyboard(direction, dt);
 }
 
 Game::Game()
@@ -68,10 +71,12 @@ Game::Game()
     #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(GLDebugMessageCallback, this);
+    // glDebugMessageCallback(GLDebugMessageCallback, this);
     #endif
 
     glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
     glEnable(GL_DEPTH_TEST);
 
     glfwSwapInterval(1);
@@ -154,15 +159,12 @@ void Game::Run()
 
     VertexBuffer vbo(vertices.data(), vertices.size() * sizeof(float));
     IndexBuffer ibo(indices.data(), indices.size() * sizeof(unsigned int));
-    // 2. Setup VAO layouts via DSA (Zero global state side-effects)
     VertexArray vao;
     
     unsigned int currentAttrib{0};
     unsigned int posCount{3};
-    // Attribute 0: Positions (3 floats)
-    vao.LinkAttribute(currentAttrib++, 0, posCount, GL_FLOAT, GL_FALSE, 0); 
-    // Attribute 1: UVs (2 floats)
-    vao.LinkAttribute(currentAttrib++, 0, 2, GL_FLOAT, GL_FALSE, posCount * sizeof(float)); 
+    vao.LinkAttribute(0, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    vao.LinkAttribute(1, 0, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float));
 
     vao.BindVertexBuffer(0, vbo.GetId(), 0, 5 * sizeof(float));
 
@@ -177,12 +179,28 @@ void Game::Run()
     double deltaTime = 0.0f;
     double lastFrame = 0.0f;
 
+    // "use small, composable functions" - jason turner
+    constexpr auto make_blocks = [] constexpr -> std::array<glm::vec3, 16 * 16 * 16> {
+        std::array<glm::vec3, 16 * 16 * 16> blocks;
+        size_t n{};
+        for(float i{-8.0f}; i < 8.0f; ++i) {
+            for(float j{-16.0f}; j < 0.0f; ++j) {
+                for(float k{-8.0f}; k < 8.0f; ++k) {
+                    blocks[n++] = glm::vec3{i, j, k};
+                }
+            }
+        }
+        return blocks;
+    };
+
+    constexpr auto blocks = make_blocks();
+
     while(m_Window.IsRunning()) {
         double currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        glfwPollEvents();
+        m_Window.PollEvents();
         ProcessEvents_();
 
         ProcessInputs_(deltaTime);
@@ -196,12 +214,13 @@ void Game::Run()
         // shader.Bind();
         vao.Bind();
 
-        model = glm::rotate(model, static_cast<float>(1.0f * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = m_Camera.GetViewMatrix();
-        projection = m_Camera.GetProjectionMatrix();
-        
-        shader.SetMat4("transform", projection * view * model);
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        for(auto& position : blocks) {
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+            view = m_Camera.GetViewMatrix();
+            projection = m_Camera.GetProjectionMatrix();
+            shader.SetMat4("transform", projection * view * model);
+            glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
+        }
         
         m_GuiContext.StartFrame();
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
