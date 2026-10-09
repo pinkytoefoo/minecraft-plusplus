@@ -1,28 +1,26 @@
-#include <iostream>
-
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include "IndexBuffer.hpp"
 
-IndexBuffer::IndexBuffer(const GLuint* indices, GLsizeiptr size)
-{
-    glGenBuffers(1, &m_Id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Id);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, GL_STATIC_DRAW);
+IndexBuffer::IndexBuffer() {
+    glGenBuffers(1, &id_);
 }
 
-IndexBuffer::~IndexBuffer()
+IndexBuffer::IndexBuffer(const GLuint* indices, std::size_t size)
+    : IndexBuffer{}
 {
-    glDeleteBuffers(1, &m_Id);
+    createBuffer(indices, size);
 }
 
-void IndexBuffer::Bind()
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Id);
+IndexBuffer::~IndexBuffer() {
+    if (id_ != 0)
+        glDeleteBuffers(1, &id_);
 }
 
-void IndexBuffer::Unbind()
-{
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+void IndexBuffer::createBuffer(const GLuint* indices, std::size_t size) {
+    glBindBuffer(GL_ARRAY_BUFFER, id_);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(size), indices, GL_STATIC_DRAW);
 }
+
+void IndexBuffer::bind() const {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id_);
+}
+

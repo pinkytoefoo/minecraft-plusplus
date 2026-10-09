@@ -13,9 +13,9 @@
 Texture::Texture(const std::string& path)
 {
     stbi_set_flip_vertically_on_load(1);
-    m_Data = stbi_load(path.c_str(), &m_Width, &m_Height, &m_BPP, 0);
-    std::cout << m_BPP << '\n';
-    if (!m_Data)
+    data_ = stbi_load(path.c_str(), &width_, &height_, &bpp_, 0);
+    std::cout << bpp_ << '\n';
+    if (!data_)
     {
         std::cerr << "Failed to load texture: "
                 << path << "\n"
@@ -23,35 +23,35 @@ Texture::Texture(const std::string& path)
         return;
     }
 
-    glGenTextures(1, &m_RendererID);
+    glGenTextures(1, &id_);
     
-    glBindTexture(GL_TEXTURE_2D, m_RendererID);
+    glBindTexture(GL_TEXTURE_2D, id_);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, m_Data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_, height_, 0, GL_RGB, GL_UNSIGNED_BYTE, data_);
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    if(m_Data)
-        stbi_image_free(m_Data);
+    if(data_)
+        stbi_image_free(data_);
 }
 
 Texture::~Texture()
 {
-    glDeleteTextures(1, &m_RendererID);
+    glDeleteTextures(1, &id_);
 }
 
-void Texture::Bind(uint32_t slot) const
+void Texture::bind(uint32_t slot) const
 {
     glActiveTexture(GL_TEXTURE0 + slot);
-    glBindTexture(GL_TEXTURE_2D, m_RendererID);
+    glBindTexture(GL_TEXTURE_2D, id_);
 }
 
-void Texture::Unbind()
+void Texture::unbind()
 {
     glBindTexture(GL_TEXTURE_2D, 0);
 }

@@ -33,33 +33,33 @@ class Camera
 public:
     Camera(float ratio, float fov = 90.0f, float near_clip = 0.01f, float far_clip = 100.0f);
 
-    void SetAspectRatio(float ratio) { m_AspectRatio = ratio; }
-    void Move(const glm::vec3& offset);
+    void setAspectRatio(float ratio) { aspectRatio_ = ratio; }
+    void move(const glm::vec3& offset);
 
-    void ProcessKeyboard(CameraDirection direction, float deltaTime);
-    void ProcessMouse(double xpos, double ypos);
+    void processKeyboard(CameraDirection direction, float deltaTime);
+    void processMouse(double xpos, double ypos);
 
-    void Rotate();
+    void rotate();
 
-    inline const glm::mat4 GetViewMatrix() const { return glm::lookAt(m_Position, m_Position + m_Front, m_Up); }
-    inline const glm::mat4 GetProjectionMatrix() const { return glm::perspective(glm::radians(m_FOV), m_AspectRatio, m_Near, m_Far); }
+    inline const glm::mat4 getViewMatrix() const { return glm::lookAt(position_, position_ + front_, up_); }
+    inline const glm::mat4 getProjectionMatrix() const { return glm::perspective(glm::radians(fov_), aspectRatio_, near_, far_); }
 
-    const glm::vec3& GetPosition() const { return m_Position; }
+    const glm::vec3& getPosition() const { return position_; }
 
 private:
-    void UpdateView();
-    void UpdateProjection();
-    glm::vec3 m_Position{glm::vec3(0.0f, 0.0f,  3.0f)};
-    glm::vec3 m_Front{glm::vec3(0.0f, 0.0f, -1.0f)};
-    glm::vec3 m_Up{glm::vec3(0.0f, 1.0f,  0.0f)};
+    void updateView();
+    void updateProjection();
+    glm::vec3 position_{glm::vec3(0.0f, 0.0f,  3.0f)};
+    glm::vec3 front_{glm::vec3(0.0f, 0.0f, -1.0f)};
+    glm::vec3 up_{glm::vec3(0.0f, 1.0f,  0.0f)};
 
-    float m_Yaw{-90.0f};
-    float m_Pitch{0.0f};
+    float yaw_{-90.0f};
+    float pitch_{0.0f};
 
-    double m_LastMouseX{0.0};
-    double m_LastMouseY{0.0};
+    double lastMouseX_{0.0};
+    double lastMouseY_{0.0};
 
-    float m_MouseSensitivity{0.1f};
+    float mouseSensitivity_{0.1f};
 
-    float m_FOV, m_AspectRatio, m_Near, m_Far;
+    float fov_, aspectRatio_, near_, far_;
 };

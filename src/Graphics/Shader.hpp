@@ -10,19 +10,20 @@ public:
     Shader(const std::string& vsFilePath, const std::string& fsFilePath);
     ~Shader();
 
-    unsigned int CreateShaderProgram(const std::string& vsCode, const std::string& fsCode);
-    unsigned int CompileShader(unsigned int type, const std::string& source);
-    void Bind();
-    void Unbind();
+    unsigned int createShaderProgram(const std::string& vsCode, const std::string& fsCode);
+    unsigned int compileShader(unsigned int type, const std::string& source);
+    void bind();
+    void unbind();
 
-    void SetMat4(const std::string& name, const glm::mat4& mat);
-    void SetUniform(const std::string& name, float v0, float v1, float v2, float v3);
-    void SetUniform1i(const std::string& name, int value);
-    int GetUniformLocation(const std::string& name);
+    void setMat4(const std::string& name, const glm::mat4& mat);
+    void setUniform(const std::string& name, float v0, float v1, float v2, float v3);
+    void setUniform1i(const std::string& name, int value);
+    int getUniformLocation(const std::string& name);
+
 private:
-    std::string GetShaderSource(const std::string& sourceFile);
-    const char* TypeToString(int type);
+    std::string getShaderSource_(const std::string& sourceFile);
+    const char* typeToString_(int type);
     
-    std::unordered_map<std::string, int> m_UniformCache;
-    unsigned int m_RendererID;
+    std::unordered_map<std::string, int> uniformCache_;
+    unsigned int id_;
 };

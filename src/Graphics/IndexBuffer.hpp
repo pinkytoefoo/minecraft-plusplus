@@ -1,18 +1,22 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <cstddef>
 
-class IndexBuffer
-{
+class IndexBuffer {
 public:
-    IndexBuffer(const GLuint* indices, GLsizeiptr size);
+    IndexBuffer();
+    IndexBuffer(const GLuint* indices, std::size_t size);
     ~IndexBuffer();
 
-    void Bind();
-    void Unbind();
-    unsigned int GetId() const { return m_Id; }
+    IndexBuffer(const IndexBuffer&) = delete;
+    IndexBuffer& operator=(const IndexBuffer&) = delete;
+
+    void createBuffer(const GLuint* indices, std::size_t size);
+    void bind() const;
+
+    GLuint getId() const noexcept { return id_; }
 
 private:
-    unsigned int m_Id;
+    GLuint id_ = 0;
 };

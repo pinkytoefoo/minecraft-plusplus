@@ -1,32 +1,38 @@
 #include "VertexArray.hpp"
 
-VertexArray::VertexArray()
-{
-    glCreateVertexArrays(1, &m_Id);
+VertexArray::VertexArray() {
+    glGenVertexArrays(1, &id_);
 }
 
-VertexArray::~VertexArray()
-{
-    glDeleteVertexArrays(1, &m_Id);
+VertexArray::~VertexArray() {
+    if (id_ != 0)
+        glDeleteVertexArrays(1, &id_);
 }
 
-void VertexArray::Bind()
-{
-    glBindVertexArray(m_Id);
+void VertexArray::bind() const {
+    glBindVertexArray(id_);
 }
 
-void VertexArray::LinkAttribute(GLuint attribIndex, GLuint bindingSlot, GLint size, GLenum type, GLboolean normalized, GLuint relativeOffset) {
-    glEnableVertexArrayAttrib(m_Id, attribIndex);
-    glVertexArrayAttribFormat(m_Id, attribIndex, size, type, normalized, relativeOffset);
-    glVertexArrayAttribBinding(m_Id, attribIndex, bindingSlot);
+void VertexArray::unbind() {
+    glBindVertexArray(0);
 }
 
-void VertexArray::BindVertexBuffer(GLuint bindingSlot, GLuint bufferHandle, GLintptr offset, GLsizei stride)
-{
-    glVertexArrayVertexBuffer(m_Id, bindingSlot, bufferHandle, offset, stride);
-}
+void VertexArray::linkAttribute(
+    GLuint index,
+    GLint componentCount,
+    GLenum type,
+    GLboolean normalized,
+    GLsizei stride,
+    std::size_t offset
+) const {
+    glEnableVertexAttribArray(index);
 
-void VertexArray::BindIndexBuffer(GLuint indexBufferHandle)
-{
-    glVertexArrayElementBuffer(m_Id, indexBufferHandle);
+    glVertexAttribPointer(
+        index,
+        componentCount,
+        type,
+        normalized,
+        stride,
+        reinterpret_cast<const void*>(offset)
+    );
 }

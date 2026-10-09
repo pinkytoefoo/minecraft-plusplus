@@ -1,22 +1,28 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <cstddef>
 
-#include "VertexBuffer.hpp"
-
-class VertexArray
-{
+class VertexArray {
 public:
     VertexArray();
     ~VertexArray();
 
-    void LinkAttribute(GLuint attribIndex, GLuint bindingSlot, GLint size, GLenum type, GLboolean normalized, GLuint relativeOffset);
+    VertexArray(const VertexArray&) = delete;
+    VertexArray& operator=(const VertexArray&) = delete;
 
-    void BindVertexBuffer(GLuint bindingSlot, GLuint bufferHandle, GLintptr offset, GLsizei stride);
-    void BindIndexBuffer(GLuint indexBufferHandle);
-    void Bind();
+    void bind() const;
+    static void unbind();
+
+    void linkAttribute(
+        GLuint index,
+        GLint componentCount,
+        GLenum type,
+        GLboolean normalized,
+        GLsizei stride,
+        std::size_t offset
+    ) const;
 
 private:
-    unsigned int m_Id{};
+    GLuint id_ = 0;
 };

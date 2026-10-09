@@ -15,18 +15,18 @@ class Game
 public:
     Game();
 
-    void Run();
+    void run();
 
 private:
-    void Render_();
-    void ProcessEvents_();
-    void ProcessInputs_(float dt);
+    void render_();
+    void processEvents_();
+    void processInputs_(float dt);
     
-    Window m_Window;
-    Camera m_Camera;
+    Window window_;
+    Camera camera_;
 
-    GuiContext m_GuiContext NO_UNIQUE_ADDRESS;
-    DebugGui m_Gui;
+    GuiContext guiContext_ NO_UNIQUE_ADDRESS;
+    DebugGui gui_;
 
-    std::bitset<GLFW_KEY_LAST> m_Keys;
+    std::bitset<GLFW_KEY_LAST> keys_;
 };

@@ -1,18 +1,23 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include <cstddef>
 
-class VertexBuffer
-{
+class VertexBuffer {
 public:
-    VertexBuffer(const void* data, size_t, GLbitfield flags = 0);
+    VertexBuffer();
+    VertexBuffer(const void* data, std::size_t size);
     ~VertexBuffer();
 
-    
-    void UpdateSubData(GLintptr offset, GLsizeiptr size, const void* data);
-    unsigned int GetId() const { return m_Id; }
+    VertexBuffer(const VertexBuffer&) = delete;
+    VertexBuffer& operator=(const VertexBuffer&) = delete;
+
+    void createBuffer(const void* data, std::size_t size);
+    void bind() const;
+    static void unbind();
+
+    GLuint getId() const noexcept { return id_; }
 
 private:
-    unsigned int m_Id{};
+    GLuint id_ = 0;
 };

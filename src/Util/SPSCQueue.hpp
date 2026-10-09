@@ -5,49 +5,50 @@
 #include <new>
 #include <array>
 
-#ifdef __cpp_lib_hardware_interference_size
-constexpr size_t k_CacheLineSize = std::hardware_destructive_interference_size;
-#else
-constexpr size_t k_CacheLineSize = 64;
-#endif
-
 template<typename T, size_t Capacity>
 class SPSCQueue
 {
 public:
     static_assert(Capacity > 0 && (Capacity & (Capacity - 1)) == 0, "Capacity must be a power of 2");
 
-    bool Push(const T& item)
+    bool push(const T& item)
     {
-        size_t head = m_Head.load(std::memory_order_relaxed);
-        if((head - m_Tail.load(std::memory_order_acquire)) == Capacity)
+        size_t head = head_.load(std::memory_order_relaxed);
+        if((head - tail_.load(std::memory_order_acquire)) == Capacity)
         {
             // todo: signal that queue is full
             return false;
         }
 
-        m_Buffer[head & k_Mask] = item;
-        m_Head.store(head + 1, std::memory_order_release);
+        buffer_[head & kMask] = item;
+        head_.store(head + 1, std::memory_order_release);
 
         return true;
     }
 
-    bool Pop(T& item)
+    bool pop(T& item)
     {
-        size_t tail = m_Tail.load(std::memory_order_relaxed);
-        if(tail == m_Head.load(std::memory_order_acquire))
+        size_t tail = tail_.load(std::memory_order_relaxed);
+        if(tail == head_.load(std::memory_order_acquire))
         {
             return false; // queue empty
         }
 
-        item = m_Buffer[tail & k_Mask];
-        m_Tail.store(tail + 1, std::memory_order_release);
+        item = buffer_[tail & kMask];
+        tail_.store(tail + 1, std::memory_order_release);
         return true;
     }
 
 private:
-    static constexpr size_t k_Mask = Capacity - 1;
-    alignas(k_CacheLineSize) std::atomic<size_t> m_Head{};
-    alignas(k_CacheLineSize) std::atomic<size_t> m_Tail{};
-    std::array<T, Capacity> m_Buffer;
+    static constexpr size_t kMask = Capacity - 1;
+
+#ifdef __cpp_lib_hardware_interference_size
+    static constexpr size_t kCacheLineSize = std::hardware_destructive_interference_size;
+#else
+    constexpr size_t kCacheLineSize = 64;
+#endif
+
+    alignas(kCacheLineSize) std::atomic<size_t> head_{0};
+    alignas(kCacheLineSize) std::atomic<size_t> tail_{0};
+    std::array<T, Capacity> buffer_;
 };

@@ -7,7 +7,6 @@
 #include <stb_image.h>
 
 #include "Window.hpp"
-#include "Util.hpp"
 
 #ifdef _WIN32
 #   define GLFW_EXPOSE_NATIVE_WIN32
@@ -20,7 +19,7 @@
 #endif
 
 Window::Window(int width, int height, const std::string& title)
-    : m_Data{width, height}
+    : data_{width, height}
 {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -29,50 +28,50 @@ Window::Window(int width, int height, const std::string& title)
     glfwWindowHint(GLFW_WIN32_KEYBOARD_MENU, GLFW_TRUE);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    m_Handle = glfwCreateWindow(m_Data.Width, m_Data.Height, title.data(), nullptr, nullptr);
+    handle_ = glfwCreateWindow(data_.width, data_.height, title.data(), nullptr, nullptr);
 
-    if(!m_Handle)
+    if(!handle_)
     {
        throw std::runtime_error{"glfwCreateWindow() failed"};
     }
 
-    glfwGetFramebufferSize(m_Handle, &m_Data.Width, &m_Data.Height);
+    glfwGetFramebufferSize(handle_, &data_.width, &data_.height);
 
-    glfwMakeContextCurrent(m_Handle);
+    glfwMakeContextCurrent(handle_);
     // start implementing exceptions
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         throw std::runtime_error("Failed to initialize GLAD");
     }
-    glViewport(0, 0, m_Data.Width, m_Data.Height);
+    glViewport(0, 0, data_.width, data_.height);
 
     // todo: add icons of difference sizes
     GLFWimage images[1];
     images[0].pixels = stbi_load("assets/textures/dirt.png", &images[0].width, &images[0].height, 0, 4);
     if (images[0].pixels) {
-        glfwSetWindowIcon(m_Handle, 1, images);
+        glfwSetWindowIcon(handle_, 1, images);
         stbi_image_free(images[0].pixels);
     }
 
     // setting window to dark mode
     #ifdef _WIN32
-    HWND hwnd = glfwGetWin32Window(m_Handle);
+    HWND hwnd = glfwGetWin32Window(handle_);
     BOOL value = TRUE;
     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &value, sizeof(value));
     #endif
 
-    glfwSetWindowUserPointer(m_Handle, this);
-    glfwSetFramebufferSizeCallback(m_Handle, [](GLFWwindow* window, int width, int height) {
+    glfwSetWindowUserPointer(handle_, this);
+    glfwSetFramebufferSizeCallback(handle_, [](GLFWwindow* window, int width, int height) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
 
-        self->m_Data.Width = width;
-        self->m_Data.Height = height;
+        self->data_.width = width;
+        self->data_.height = height;
 
-        glViewport(0, 0, self->m_Data.Width, self->m_Data.Height);
+        glViewport(0, 0, self->data_.width, self->data_.height);
 
-        self->m_Queue.Push(Event{WindowResizeEvent{width, height}});
+        self->queue_.push(Event{WindowResizeEvent{width, height}});
     });
 
-    glfwSetKeyCallback(m_Handle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+    glfwSetKeyCallback(handle_, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
 
         switch(key)
@@ -101,19 +100,19 @@ Window::Window(int width, int height, const std::string& title)
                 break;
 
             default:
-                self->m_Queue.Push(Event{KeyEvent{key, scancode, action, mods}});
+                self->queue_.push(Event{KeyEvent{key, scancode, action, mods}});
                 break;
         }
     });
 
-    glfwSetCursorPosCallback(m_Handle, [](GLFWwindow* window, double xpos, double ypos) {
+    glfwSetCursorPosCallback(handle_, [](GLFWwindow* window, double xpos, double ypos) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
 
-        self->m_Queue.Push(Event{MouseMoveEvent{xpos, ypos}});
+        self->queue_.push(Event{MouseMoveEvent{xpos, ypos}});
     });
 }
 
 Window::~Window()
 {
-    glfwDestroyWindow(m_Handle);
+    glfwDestroyWindow(handle_);
 }

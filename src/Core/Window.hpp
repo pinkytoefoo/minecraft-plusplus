@@ -19,32 +19,33 @@ public:
     Window(Window&&) = delete;
     void operator=(Window&&) = delete;
 
-    bool GetEventFromQueue(Event& outEvent)
+    bool getEventFromQueue(Event& outEvent)
     {
-        return m_Queue.Pop(outEvent);
+        return queue_.pop(outEvent);
     }
     
-    bool IsRunning() const { return !glfwWindowShouldClose(m_Handle); }
-    inline void SwapBuffers() const { glfwSwapBuffers(m_Handle); }
-    inline void PollEvents() const { glfwPollEvents(); }
+    bool isRunning() const { return !glfwWindowShouldClose(handle_); }
+    inline void swapBuffers() const { glfwSwapBuffers(handle_); }
+    inline void pollEvents() const { glfwPollEvents(); }
     
-    GLFWwindow* NativeHandle() const { return m_Handle; }
-    int GetWidth() const { return m_Data.Width; }
-    int GetHeight() const { return m_Data.Height; }
+    GLFWwindow* nativeHandle() const { return handle_; }
+    int getWidth() const { return data_.width; }
+    int getHeight() const { return data_.height; }
+    float getRatio() const { return static_cast<float>(data_.width) / static_cast<float>(data_.height); }
 
 private:
     using EventQueue = SPSCQueue<Event, 128>;
-    EventQueue m_Queue;
+    EventQueue queue_;
 
-    GLFWwindow* m_Handle{nullptr};
+    GLFWwindow* handle_{nullptr};
     struct WindowData
     {
-        WindowData(int width, int height)
-            : Width{width}, Height{height}
+        WindowData(int w, int h)
+            : width{w}, height{h}
         {
         }
-        int Width, Height;
-        bool IsMouseCaptured{false};
+        int width, height;
+        bool isMouseCaptured{false};
     };
-    WindowData m_Data;
+    WindowData data_;
 };

@@ -13,14 +13,14 @@ public:
     void OnUpdate();
     
     // TODO: abstract clear color into renderer
-    const ImVec4& GetClearColor() { return m_ClearColor; }
+    const ImVec4& getClearColor() const { return clear_color_; }
 
 private:
-    const unsigned char* m_Vendor{ nullptr };
-    const unsigned char* m_Renderer{ nullptr };
-    const unsigned char* m_Version{ nullptr };
+    const unsigned char* vendor_{ nullptr };
+    const unsigned char* renderer_{ nullptr };
+    const unsigned char* version_{ nullptr };
 
-    ImGuiIO& m_IO;
+    ImGuiIO& io_;
     
-    ImVec4 m_ClearColor{ ImVec4(0.2f, 0.5f, 0.7f, 1.0f) };
+    ImVec4 clear_color_{ ImVec4(0.2f, 0.5f, 0.7f, 1.0f) };
 };

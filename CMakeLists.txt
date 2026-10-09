@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(mc LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,7 +22,7 @@ add_library(mc_warnings INTERFACE)
 if(MSVC)
     target_compile_options(mc_warnings INTERFACE /W4 /permissive-)
 else()
-    target_compile_options(mc_warnings INTERFACE -Wall -Wextra -Wshadow -Wconversion)
+    target_compile_options(mc_warnings INTERFACE -Wall -Wextra -Wshadow -Wconversion -Wno-interference-size)
 endif()
 
 # asan only shows leaks for wayland and driver caches
@@ -49,7 +49,11 @@ target_include_directories(mc PRIVATE
     src
 )
 
-target_compile_definitions(mc PRIVATE GLFW_INCLUDE_NONE)
+target_compile_definitions(mc PRIVATE
+    GLFW_INCLUDE_NONE
+    $<$<CONFIG:Debug>:MC_DEBUG>
+    $<$<CONFIG:Release>:MC_RELEASE>
+)
 
 target_link_libraries(mc PRIVATE mc_warnings glad glfw imgui glm stb)
 if(WIN32)

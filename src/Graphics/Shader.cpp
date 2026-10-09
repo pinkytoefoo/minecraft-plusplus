@@ -13,22 +13,22 @@
 
 Shader::Shader(const std::string& vsFilePath, const std::string& fsFilePath)
 {
-    std::string vsSourceCode = GetShaderSource(vsFilePath);
-    std::string fsSourceCode = GetShaderSource(fsFilePath);
+    std::string vsSourceCode = getShaderSource_(vsFilePath);
+    std::string fsSourceCode = getShaderSource_(fsFilePath);
 
-    m_RendererID = CreateShaderProgram(vsSourceCode, fsSourceCode);
+    id_ = createShaderProgram(vsSourceCode, fsSourceCode);
 }
 
 Shader::~Shader()
 {
-    glDeleteProgram(m_RendererID);
+    glDeleteProgram(id_);
 }
 
-unsigned int Shader::CreateShaderProgram(const std::string& vertexShaderCode, const std::string& fragmentShaderCode)
+unsigned int Shader::createShaderProgram(const std::string& vertexShaderCode, const std::string& fragmentShaderCode)
 {
     unsigned int program = glCreateProgram();
-    unsigned int vertexShader = CompileShader(GL_VERTEX_SHADER, vertexShaderCode);
-    unsigned int fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderCode);
+    unsigned int vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderCode);
+    unsigned int fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderCode);
     
     glAttachShader(program, vertexShader);
     glAttachShader(program, fragmentShader);
@@ -42,7 +42,7 @@ unsigned int Shader::CreateShaderProgram(const std::string& vertexShaderCode, co
     return program;
 }
 
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
+unsigned int Shader::compileShader(unsigned int type, const std::string& source)
 {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();
@@ -58,10 +58,10 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
 
         if (infoLogLength > 0)
         {
-            char* infoLog = (char*) alloca(infoLogLength * sizeof(char));
+            char* infoLog = (char*) alloca(static_cast<size_t>(infoLogLength) * sizeof(char));
             glGetShaderInfoLog(id, infoLogLength, &infoLogLength, infoLog);
 
-            std::cerr << TypeToString(type) << " shader compile error: " << infoLog << '\n';
+            std::cerr << typeToString_(type) << " shader compile error: " << infoLog << '\n';
         }
 
         glDeleteShader(id);
@@ -72,50 +72,50 @@ unsigned int Shader::CompileShader(unsigned int type, const std::string& source)
     return id;
 }
 
-void Shader::SetMat4(const std::string& name, const glm::mat4& mat)
+void Shader::setMat4(const std::string& name, const glm::mat4& mat)
 {
-    glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
+    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-void Shader::SetUniform(const std::string& name, float v0, float v1, float v2, float v3)
+void Shader::setUniform(const std::string& name, float v0, float v1, float v2, float v3)
 {
-    glUniform4f(GetUniformLocation(name), v0, v1, v2, v3);
+    glUniform4f(getUniformLocation(name), v0, v1, v2, v3);
 }
 
-void Shader::SetUniform1i(const std::string& name, int value)
+void Shader::setUniform1i(const std::string& name, int value)
 {
-    glUniform1i(GetUniformLocation(name), value);
+    glUniform1i(getUniformLocation(name), value);
 }
 
-int Shader::GetUniformLocation(const std::string& name)
+int Shader::getUniformLocation(const std::string& name)
 {
-    auto it = m_UniformCache.find(name);
-    if(it != m_UniformCache.end())
+    auto it = uniformCache_.find(name);
+    if(it != uniformCache_.end())
         return it->second;
 
-    int location = glGetUniformLocation(m_RendererID, name.c_str());
+    int location = glGetUniformLocation(id_, name.c_str());
 
     #ifndef NDEBUG
     if(location == -1)
         std::cout << "Uniform '" << name << "' not found\n";
     #endif
 
-    m_UniformCache[name] = location;
+    uniformCache_[name] = location;
 
     return location;
 }
 
-void Shader::Bind()
+void Shader::bind()
 {
-    glUseProgram(m_RendererID);
+    glUseProgram(id_);
 }
 
-void Shader::Unbind()
+void Shader::unbind()
 {
     glUseProgram(0);
 }
 
-const char* Shader::TypeToString(int type)
+const char* Shader::typeToString_(int type)
 {
     const char* result;
     switch(type)
@@ -131,7 +131,7 @@ const char* Shader::TypeToString(int type)
     return result;
 }
 
-std::string Shader::GetShaderSource(const std::string& sourceFile)
+std::string Shader::getShaderSource_(const std::string& sourceFile)
 {
     std::ifstream stream(sourceFile);
 
