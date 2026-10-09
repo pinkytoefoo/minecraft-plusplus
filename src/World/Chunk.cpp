@@ -4,7 +4,7 @@
 
 using ChunkView = std::mdspan<BlockType, std::dextents<size_t, 3>>;
 
-Mesh Chunk::buildMesh() {
+Mesh Chunk::buildMesh() const {
     Mesh m;
     m.reserveExpected(256);
     
@@ -15,17 +15,17 @@ Mesh Chunk::buildMesh() {
                     continue;
 
                 if(at(x + 1, y, z) == BlockType::Air)
-                    m.addFace(FaceDir::Right, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Right, x, y, z);
                 if(at(x - 1, y, z) == BlockType::Air)
-                    m.addFace(FaceDir::Left, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Left, x, y, z);
                 if(at(x, y, z + 1) == BlockType::Air)
-                    m.addFace(FaceDir::Front, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Front, x, y, z);
                 if(at(x, y, z - 1) == BlockType::Air)
-                    m.addFace(FaceDir::Back, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Back, x, y, z);
                 if(at(x, y + 1, z) == BlockType::Air)
-                    m.addFace(FaceDir::Top, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Top, x, y, z);
                 if(at(x, y - 1, z) == BlockType::Air)
-                    m.addFace(FaceDir::Bottom, x, y, z, BlockType::Dirt);
+                    m.addFace(FaceDir::Bottom, x, y, z);
             }
         }
     }

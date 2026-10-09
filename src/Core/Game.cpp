@@ -84,8 +84,6 @@ void Game::render_()
 
 void Game::run()
 {
-    glm::mat4 model = glm::mat4(1.0f);
-
     Shader shader("assets/shaders/ttest.vert", "assets/shaders/ttest.frag");
     shader.bind();
 
@@ -95,21 +93,39 @@ void Game::run()
     double deltaTime = 0.0f;
     double lastFrame = 0.0f;
 
-    Chunk chunk;
 
-    for(size_t x{}; x < Chunk::Size; ++x) {
-        for(size_t y{}; y < Chunk::Size; ++y) {
-            for(size_t z{}; z < Chunk::Size; ++z) {
-                chunk[x, y, z] = (y < 4) ? BlockType::Dirt : BlockType::Air;
+    constexpr auto genChunk = [](glm::ivec3 coord) -> Chunk {
+        Chunk outChunk{coord};
+
+        for(size_t x{}; x < Chunk::Size; ++x) {
+            for(size_t y{}; y < Chunk::Size; ++y) {
+                for(size_t z{}; z < Chunk::Size; ++z) {
+                    outChunk[x, y, z] = (y < 4) ? BlockType::Dirt : BlockType::Air;
+                }
             }
         }
+        
+        return outChunk;
+    };
+
+    std::vector<Chunk> chunks;
+    chunks.reserve(4);
+    chunks.push_back(genChunk({0, 0, 0}));
+    chunks.push_back(genChunk({1, 0, 0}));
+    chunks.push_back(genChunk({0, 0, 1}));
+    chunks.push_back(genChunk({1, 0, 1}));
+
+    std::vector<Mesh> meshes;
+    std::vector<std::unique_ptr<ChunkRenderer>> renderers;
+    meshes.reserve(chunks.size());
+    renderers.reserve(chunks.size());
+    for(const auto& chunk : chunks) {
+        meshes.push_back(chunk.buildMesh());
+
+        renderers.push_back(
+            std::make_unique<ChunkRenderer>(meshes.back())
+        );
     }
-    std::cout << "built chunk\n";
-    
-    Mesh mesh = chunk.buildMesh();
-    std::cout << "built mesh\n";
-    ChunkRenderer renderer(mesh);
-    std::cout << "created renderer\n";
 
     while(window_.isRunning()) {
         double currentFrame = glfwGetTime();
@@ -121,17 +137,29 @@ void Game::run()
 
         processInputs_(deltaTime);
 
-        ImVec4 clear_color = gui_.getClearColor();
+        ImVec4 clear_color = debugGui_.getClearColor();
 
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // texture.Bind();
         // shader.Bind();
-        glm::mat4 transform = camera_.getProjectionMatrix() * camera_.getViewMatrix() * model;
         shader.bind();
-        shader.setMat4("transform", transform);
-        renderer.draw(mesh.indices.size());
+        for (size_t i = 0; i < chunks.size(); ++i) {
+            glm::mat4 model = glm::translate(
+                glm::mat4(1.0f),
+                chunks[i].getPosition()
+            );
+
+            glm::mat4 transform =
+                camera_.getProjectionMatrix() *
+                camera_.getViewMatrix() *
+                model;
+
+            shader.setMat4("transform", transform);
+
+            renderers[i]->draw(meshes[i].indices.size());
+        }
 
         // for(auto& position : blocks) {
         //     glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
@@ -143,7 +171,8 @@ void Game::run()
         
         guiContext_.StartFrame();
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-        gui_.OnUpdate();
+        gameGui_.OnUpdate(camera_);
+        debugGui_.OnUpdate();
         guiContext_.EndFrame();
         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {

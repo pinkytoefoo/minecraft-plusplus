@@ -7,8 +7,9 @@
 #include "Core/Util.hpp"
 #include "Graphics/Camera.hpp"
 #include "Window.hpp"
-#include "Gui/DebugGui.hpp"
 #include "Gui/GuiContext.hpp"
+#include "Gui/DebugGui.hpp"
+#include "Gui/GameplayGui.hpp"
 
 class Game
 {
@@ -26,7 +27,8 @@ private:
     Camera camera_;
 
     GuiContext guiContext_ NO_UNIQUE_ADDRESS;
-    DebugGui gui_;
+    DebugGui debugGui_;
+    GameplayGui gameGui_ NO_UNIQUE_ADDRESS;
 
     std::bitset<GLFW_KEY_LAST> keys_;
 };

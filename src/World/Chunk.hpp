@@ -64,7 +64,7 @@ struct Mesh
         indices.reserve(expected_quads * 6);
     }
 
-    void addFace(FaceDir faceDir, int x, int y, int z, BlockType blockType) {
+    void addFace(FaceDir faceDir, int x, int y, int z) {
         auto& localVertices = faceVertices[static_cast<size_t>(faceDir)];
 
         auto preStart = static_cast<uint32_t>(vertices.size());
@@ -72,8 +72,6 @@ struct Mesh
             uint32_t vx = x + localVertices[i].x;
             uint32_t vy = y + localVertices[i].y;
             uint32_t vz = z + localVertices[i].z;
-            uint8_t faceIdx = static_cast<uint8_t>(faceDir);
-            uint8_t blockIdx = static_cast<uint8_t>(blockType);
             
             vertices.emplace_back(glm::vec3{vx, vy, vz}, uvs[i]);
         }
@@ -92,23 +90,34 @@ struct Chunk
     static constexpr int Size = 16;
     static constexpr int BlockCount = Size * Size * Size;
 
-    BlockType& operator[](size_t x, size_t y, size_t z) {
-        return blocks_[x,y,z];
+    explicit Chunk(glm::ivec3 coord = {0, 0, 0})
+        : chunkCoord(coord) {}
+
+    glm::vec3 getPosition() const {
+        return glm::vec3(chunkCoord * Size);
     }
 
-    Mesh buildMesh();
+    BlockType& operator[](size_t x, size_t y, size_t z) {
+        return blocks_[x, y, z];
+    }
+
+    Mesh buildMesh() const;
 
 private:
+    glm::ivec3 chunkCoord;
+
     using BlockArray = FlatArray<BlockType, Size>;
     BlockArray blocks_;
-    BlockType at(int x, int y, int z) {
-        if(x < 0 || x >= Size || y < 0 || y >= Size || z < 0 || z >= Size)
+
+    BlockType at(int x, int y, int z) const {
+        if (x < 0 || x >= Size ||
+            y < 0 || y >= Size ||
+            z < 0 || z >= Size)
             return BlockType::Air;
 
         return blocks_[x, y, z];
     }
 };
-
 class ChunkRenderer
 {
 public:

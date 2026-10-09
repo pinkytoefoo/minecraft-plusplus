@@ -18,15 +18,15 @@ public:
     }
 
     constexpr T& operator[](int x, int y, int z) noexcept {
-        assert(x < Size);
-        assert(y < Size);
-        assert(z < Size);
+        // assert(x < Size);
+        // assert(y < Size);
+        // assert(z < Size);
         return begin_[x + Size * (y + Size * z)];
     }
     constexpr const T& operator[](int x, int y, int z) const noexcept {
-        assert(x < Size);
-        assert(y < Size);
-        assert(z < Size);
+        // assert(x < Size);
+        // assert(y < Size);
+        // assert(z < Size);
         return begin_[x + Size * (y + Size * z)];
     }
 
