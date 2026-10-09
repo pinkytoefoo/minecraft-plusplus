@@ -16,7 +16,7 @@ int main()
         GlfwContext glfwContext;
 
         Game game;
-        game.Run();
+        game.run();
     }
     catch (const std::exception& e)
     {
