@@ -1,5 +1,5 @@
 #include <string>
-#include <iostream>
+#include <memory>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -110,10 +110,17 @@ void Game::run()
 
     std::vector<Chunk> chunks;
     chunks.reserve(4);
-    chunks.push_back(genChunk({0, 0, 0}));
-    chunks.push_back(genChunk({1, 0, 0}));
-    chunks.push_back(genChunk({0, 0, 1}));
-    chunks.push_back(genChunk({1, 0, 1}));
+    constexpr int renderDistance = 2;
+    for (int x = -renderDistance; x <= renderDistance; ++x) {
+        for (int z = -renderDistance; z <= renderDistance; ++z) {
+            chunks.push_back(genChunk({x, 0, z}));
+        }
+    }
+    // chunks.push_back(genChunk({0, 0, 0}));
+    // // chunks.push_back(genChunk({1, 0, 0}));
+    // chunks.push_back(genChunk({-1, 0, 0}));
+    // chunks.push_back(genChunk({0, 0, -1}));
+    // chunks.push_back(genChunk({1, 0, -1}));
 
     std::vector<Mesh> meshes;
     std::vector<std::unique_ptr<ChunkRenderer>> renderers;
@@ -151,10 +158,7 @@ void Game::run()
                 chunks[i].getPosition()
             );
 
-            glm::mat4 transform =
-                camera_.getProjectionMatrix() *
-                camera_.getViewMatrix() *
-                model;
+            glm::mat4 transform = camera_.getProjectionMatrix() * camera_.getViewMatrix() * model;
 
             shader.setMat4("transform", transform);
 

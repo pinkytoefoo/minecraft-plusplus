@@ -52,6 +52,7 @@ Window::Window(int width, int height, const std::string& title)
         stbi_image_free(images[0].pixels);
     }
 
+    glfwSetInputMode(handle_, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // setting window to dark mode
     #ifdef _WIN32
     HWND hwnd = glfwGetWin32Window(handle_);
@@ -89,10 +90,10 @@ Window::Window(int width, int height, const std::string& title)
                 if(action != GLFW_PRESS)
                     break;
 
-                if(glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                else
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                // if(glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL)
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                // else
+                    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 // if (glfwRawMouseMotionSupported())
                 // {
                 //     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
